@@ -83,7 +83,7 @@
 
 - (void)NavigationBarTransition_viewWillAppear:(BOOL)animated {
     // 放在最前面，留一个时机给业务可以覆盖
-    [self renderNavigationStyleInViewController:self animated:animated];
+    [self renderNavigationStyleInViewController:self animated:animated]; ///从子类实现的方法中获取导航栏配置配置新，设置导航栏
     [self NavigationBarTransition_viewWillAppear:animated];
 }
 
@@ -161,6 +161,7 @@
     }
 }
 
+///根据导航栏的样式穿件爱你一个假的
 - (void)addTransitionNavigationBarIfNeeded {
     
     if (!self.view.qmui_visible || !self.navigationController.navigationBar) {
@@ -371,6 +372,7 @@
     return NO;
 }
 
+///判断两个控制器之前的NavigationBar 样式是否存在差别，是否需要自定义转换
 - (BOOL)shouldCustomTransitionAutomaticallyWithFirstViewController:(UIViewController *)viewController1 secondViewController:(UIViewController *)viewController2 {
     
     UIViewController<QMUINavigationControllerDelegate> *vc1 = (UIViewController<QMUINavigationControllerDelegate> *)viewController1;
@@ -380,6 +382,7 @@
         return NO;// 只处理前后两个界面都是 QMUI 系列的场景
     }
     
+    //如果都实现了customNavigationBarTransitionKey，通过key判断两个导航栏样式是否相同。
     if ([vc1 respondsToSelector:@selector(customNavigationBarTransitionKey)] || [vc2 respondsToSelector:@selector(customNavigationBarTransitionKey)]) {
         NSString *key1 = [vc1 respondsToSelector:@selector(customNavigationBarTransitionKey)] ? [vc1 customNavigationBarTransitionKey] : nil;
         NSString *key2 = [vc2 respondsToSelector:@selector(customNavigationBarTransitionKey)] ? [vc2 customNavigationBarTransitionKey] : nil;
@@ -387,10 +390,12 @@
         return result;
     }
     
+    //是否根据NavigationBar中的内容判断是否 自定义切换
     if (!AutomaticCustomNavigationBarTransitionStyle) {
         return NO;
     }
     
+    ///比较背景图片
     UIImage *bg1 = [vc1 respondsToSelector:@selector(navigationBarBackgroundImage)] ? [vc1 navigationBarBackgroundImage] : [[UINavigationBar appearance] backgroundImageForBarMetrics:UIBarMetricsDefault];
     UIImage *bg2 = [vc2 respondsToSelector:@selector(navigationBarBackgroundImage)] ? [vc2 navigationBarBackgroundImage] : [[UINavigationBar appearance] backgroundImageForBarMetrics:UIBarMetricsDefault];
     if (bg1 || bg2) {
@@ -416,6 +421,7 @@
         }
     }
     
+    //bar底部的分割线
     UIImage *shadowImage1 = [vc1 respondsToSelector:@selector(navigationBarShadowImage)] ? [vc1 navigationBarShadowImage] : (vc1.navigationController.navigationBar ? vc1.navigationController.navigationBar.shadowImage : (QMUICMIActivated ? NavBarShadowImage : nil));
     UIImage *shadowImage2 = [vc2 respondsToSelector:@selector(navigationBarShadowImage)] ? [vc2 navigationBarShadowImage] : (vc2.navigationController.navigationBar ? vc2.navigationController.navigationBar.shadowImage : (QMUICMIActivated ? NavBarShadowImage : nil));
     if (shadowImage1 || shadowImage2) {
@@ -481,18 +487,21 @@ static char kAssociatedObjectKey_backgroundViewHidden;
 
 - (void)NavigationBarTransition_pushViewController:(UIViewController *)viewController animated:(BOOL)animated {
     
+    //如果自定义转场动画，不做处理，直接调用系统方法
     if ([self.delegate respondsToSelector:@selector(navigationController:animationControllerForOperation:fromViewController:toViewController:)]) {
         return [self NavigationBarTransition_pushViewController:viewController animated:animated];
     }
     
+    //栈里只有一个控制器
     UIViewController *disappearingViewController = self.viewControllers.lastObject;
     if (!disappearingViewController) {
         return [self NavigationBarTransition_pushViewController:viewController animated:animated];
     }
     
+    //是否需要处理导航了的切换
     BOOL shouldCustomNavigationBarTransition = [self shouldCustomTransitionAutomaticallyWithFirstViewController:disappearingViewController secondViewController:viewController];
-    
     if (shouldCustomNavigationBarTransition) {
+        //创建一个假的导航栏，放在即将消失的控制器上
         [disappearingViewController addTransitionNavigationBarIfNeeded];
         disappearingViewController.prefersNavigationBarBackgroundViewHidden = YES;
     }
